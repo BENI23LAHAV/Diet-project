@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>מעקב תזונה וכושר אישי</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer" />
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body
+    class="min-h-screen bg-gradient-to-b from-emerald-50 to-sky-50 text-slate-900 flex flex-col font-sans">
+    <!-- App Shell -->
+    <div class="flex-1 flex flex-col max-w-md mx-auto w-full pb-20 px-3">
+      <!-- Header -->
+      <header class="pt-4 pb-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 id="greetingTitle" class="text-2xl font-bold text-emerald-700">
+              ברוך הבא!
+            </h1>
+            <p id="greetingSubtitle" class="text-sm text-slate-500 mt-0.5">
+              המסע הבריא שלך מתחיל כאן
+            </p>
+          </div>
+          <button
+            id="openSettingsModalButton"
+            class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 shadow-sm active:scale-95 transition-transform"
+            aria-label="הגדרות משתמש">
+            <i class="fa-solid fa-user-gear text-lg"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Views Container -->
+      <main class="flex-1 space-y-4 pb-4">
+        <!-- INPUT (Dashboard + Quick Entry) -->
+        <section id="view-input" class="space-y-4">
+          <!-- Toggle Form Visibility -->
+          <button
+            id="toggleFormButton"
+            class="w-full flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 py-2 text-xs font-semibold active:scale-[0.99] transition-transform">
+            <i class="fa-solid fa-chevron-up text-[10px]"></i>
+            <span>הסתר טופס רישום</span>
+          </button>
+
+          <!-- Summary Cards -->
+          <div class="grid grid-cols-2 gap-2">
+            <div
+              class="bg-white rounded-2xl shadow-sm p-3 flex flex-col items-start">
+              <span class="text-xs text-slate-500 mb-1">משקל נוכחי</span>
+              <span
+                id="currentWeightDisplay"
+                class="text-lg font-semibold text-emerald-700"
+                >—</span
+              >
+              <span class="text-[11px] text-slate-400 mt-auto">ק&quot;ג</span>
+            </div>
+            <div
+              class="bg-white rounded-2xl shadow-sm p-3 flex flex-col items-start">
+              <span class="text-xs text-slate-500 mb-1">ירידה כוללת</span>
+              <span
+                id="totalLossDisplay"
+                class="text-lg font-semibold text-sky-700"
+                >—</span
+              >
+              <span class="text-[11px] text-slate-400 mt-auto">ק&quot;ג</span>
+            </div>
+            <div
+              class="bg-white rounded-2xl shadow-sm p-3 flex flex-col items-start">
+              <span class="text-xs text-slate-500 mb-1">רשומות השבוע</span>
+              <span
+                id="entriesWeekDisplay"
+                class="text-lg font-semibold text-amber-600"
+                >0</span
+              >
+              <span class="text-[11px] text-slate-400 mt-auto"
+                >7 הימים האחרונים</span
+              >
+            </div>
+            <div
+              class="bg-white rounded-2xl shadow-sm p-3 flex flex-col items-start">
+              <span class="text-xs text-slate-500 mb-1">רצף נוכחי</span>
+              <span
+                id="streakDisplay"
+                class="text-lg font-semibold text-violet-600"
+                >0</span
+              >
+              <span class="text-[11px] text-slate-400 mt-auto"
+                >ימים ברצף עם רישום</span
+              >
+            </div>
+            <div
+              class="bg-white rounded-2xl shadow-sm p-3 flex flex-col items-start col-span-2">
+              <span class="text-xs text-slate-500 mb-1"
+                >סה״כ קלוריות שנשרפו השבוע</span
+              >
+              <span
+                id="caloriesWeekDisplay"
+                class="text-lg font-semibold text-amber-700"
+                >0</span
+              >
+              <span class="text-[11px] text-slate-400 mt-auto"
+                >חישוב לפי משקל, פעילות ומשך ב‑7 הימים האחרונים</span
+              >
+            </div>
+          </div>
+
+          <!-- BMI Card -->
+          <div
+            id="bmiCard"
+            class="bg-white rounded-2xl shadow-sm p-3 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-slate-500 mb-1 block">BMI נוכחי</span>
+              <span
+                id="bmiDisplay"
+                class="text-lg font-semibold text-emerald-700"
+                >—</span
+              >
+              <span
+                id="bmiCategoryDisplay"
+                class="text-[11px] text-slate-400 block mt-0.5"></span>
+            </div>
+            <div
+              class="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-50 text-emerald-500">
+              <i class="fa-solid fa-heart-pulse text-sm"></i>
+            </div>
+          </div>
+
+          <!-- Daily Motivation -->
+          <div
+            class="bg-gradient-to-l from-emerald-500 to-sky-500 rounded-2xl shadow-sm p-3 text-white flex items-start space-x-2 space-x-reverse">
+            <div class="mt-0.5">
+              <i class="fa-solid fa-bolt text-lg"></i>
+            </div>
+            <div>
+              <p class="text-xs font-semibold mb-1">מנת מוטיבציה יומית</p>
+              <p id="motivationText" class="text-sm leading-snug"></p>
+            </div>
+          </div>
+
+          <!-- Weight Trend Chart -->
+          <div class="bg-white rounded-2xl shadow-sm p-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-slate-700"
+                >גרף משקל לאורך זמן</span
+              >
+              <span class="text-[11px] text-slate-400">ק&quot;ג</span>
+            </div>
+            <div class="h-48">
+              <canvas id="weightChart" class="w-full h-full"></canvas>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">
+              טיפ: שמירה על עקביות ברישום עוזרת להבחין במגמות אמיתיות.
+            </p>
+          </div>
+
+          <!-- Quick Input Form -->
+          <div id="entryFormCard" class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2 space-x-reverse">
+                <i class="fa-solid fa-pen-to-square text-emerald-500"></i>
+                <h2 class="text-sm font-semibold text-slate-700">
+                  רישום יומי מהיר
+                </h2>
+              </div>
+              <span class="text-[11px] text-slate-400">לוקח פחות מדקה</span>
+            </div>
+
+            <form id="entryForm" class="space-y-3">
+              <div class="space-y-1">
+                <label for="dateInput" class="text-xs text-slate-600"
+                  >תאריך</label
+                >
+                <input
+                  id="dateInput"
+                  type="date"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50" />
+              </div>
+
+              <div class="space-y-1">
+                <label for="weightInput" class="text-xs text-slate-600"
+                  >משקל נוכחי (ק&quot;ג)</label
+                >
+                <input
+                  id="weightInput"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  inputmode="decimal"
+                  placeholder="לדוגמה: 72.5"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <label for="activityType" class="text-xs text-slate-600"
+                  >סוג פעילות</label
+                >
+                <select
+                  id="activityType"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50">
+                  <option value="הליכה">הליכה</option>
+                  <option value="ריצה">ריצה</option>
+                  <option value="רכיבה">רכיבה</option>
+                  <option value="חדר כושר">חדר כושר</option>
+                  <option value="אחר">אחר</option>
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label for="durationInput" class="text-xs text-slate-600"
+                  >משך (בדקות)</label
+                >
+                <input
+                  id="durationInput"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputmode="decimal"
+                  placeholder="לדוגמה: 30"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50" />
+              </div>
+
+              <div class="space-y-1">
+                <label for="notesInput" class="text-xs text-slate-600"
+                  >הערות קצרות (לא חובה)</label
+                >
+                <textarea
+                  id="notesInput"
+                  rows="2"
+                  maxlength="140"
+                  placeholder="איך הרגשת היום? משהו שחשוב לזכור?"
+                  class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50 resize-none"></textarea>
+              </div>
+
+              <button
+                type="submit"
+                class="w-full flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-500 text-white py-2.5 text-sm font-semibold shadow-sm active:scale-[0.99] transition-transform">
+                <i class="fa-solid fa-circle-plus"></i>
+                <span>שמור רישום להיום</span>
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- HISTORY -->
+        <section id="view-history" class="space-y-3 hidden">
+          <div
+            class="bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between">
+            <div class="flex items-center space-x-2 space-x-reverse">
+              <i class="fa-solid fa-clock-rotate-left text-sky-500"></i>
+              <h2 class="text-sm font-semibold text-slate-700">
+                היסטוריית רישומים
+              </h2>
+            </div>
+            <span class="text-[11px] text-slate-400" id="historyCountLabel"
+              >0 רשומות</span
+            >
+          </div>
+
+          <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="max-h-[320px] overflow-y-auto">
+              <table class="min-w-full text-xs">
+                <thead class="bg-slate-50 text-slate-500 sticky top-0">
+                  <tr>
+                    <th class="py-2 px-3 text-right font-medium">תאריך</th>
+                    <th class="py-2 px-3 text-right font-medium">משקל</th>
+                    <th class="py-2 px-3 text-right font-medium">פעילות</th>
+                    <th class="py-2 px-3 text-right font-medium">קלוריות</th>
+                    <th class="py-2 px-3 text-right font-medium">הערות</th>
+                    <th class="py-2 px-2 text-center font-medium w-10">מחק</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTableBody" class="divide-y divide-slate-100">
+                  <!-- Filled dynamically -->
+                </tbody>
+              </table>
+            </div>
+            <p class="text-[11px] text-slate-400 px-4 py-2">
+              טיפ: ניתן למחוק רישומים ישנים כדי לשמור על טבלה נקייה ופשוטה.
+            </p>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section id="view-settings" class="space-y-3 hidden">
+          <!-- Notifications -->
+          <div class="bg-white rounded-2xl shadow-sm p-4 space-y-2">
+            <div class="flex items-center space-x-2 space-x-reverse mb-1">
+              <i class="fa-solid fa-bell text-amber-500"></i>
+              <h2 class="text-sm font-semibold text-slate-700">
+                תזכורות והתראות
+              </h2>
+            </div>
+            <p class="text-xs text-slate-500 leading-snug">
+              אפשר התראות בדפדפן כדי לקבל מנת מוטיבציה יומית ותזכורת ליום השקילה
+              השבועי שלך.
+            </p>
+            <button
+              id="notificationsButton"
+              class="mt-1 inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl border border-emerald-300 text-emerald-700 px-3 py-2 text-xs font-semibold bg-emerald-50 active:scale-[0.99] transition-transform">
+              <i class="fa-solid fa-bell"></i>
+              <span>אפשר התראות חכמות</span>
+            </button>
+            <p
+              id="notificationsStatus"
+              class="text-[11px] text-slate-400 mt-1"></p>
+          </div>
+
+          <!-- Data & Backup -->
+          <div class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+            <div class="flex items-center space-x-2 space-x-reverse mb-1">
+              <i class="fa-solid fa-database text-sky-500"></i>
+              <h2 class="text-sm font-semibold text-slate-700">
+                נתונים וגיבוי
+              </h2>
+            </div>
+
+            <!-- Full JSON Backup -->
+            <div class="space-y-1">
+              <p class="text-xs text-slate-500">
+                גיבוי מלא (JSON) כולל גם את ההגדרות האישיות וגם את כל הרישומים.
+                מומלץ לבצע גיבוי לפני החלפת מכשיר או דפדפן.
+              </p>
+              <button
+                id="downloadBackupJsonButton"
+                class="mt-1 inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-500 text-white px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
+                <i class="fa-solid fa-cloud-arrow-down"></i>
+                <span>הורדת גיבוי מלא (מומלץ)</span>
+              </button>
+            </div>
+
+            <!-- Restore from JSON Backup -->
+            <div class="border-t border-slate-100 pt-3 space-y-1">
+              <p class="text-xs text-slate-500">
+                שחזור מגיבוי (JSON) ישחזר את ההגדרות האישיות שלך וימזג חכם את
+                הרישומים לפי תאריך.
+              </p>
+              <button
+                id="restoreBackupJsonButton"
+                class="mt-1 inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl border border-slate-300 text-slate-700 px-3 py-2 text-xs font-semibold bg-slate-50 active:scale-[0.99] transition-transform">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>שחזור מגיבוי</span>
+              </button>
+              <input
+                id="restoreBackupJsonInput"
+                type="file"
+                accept=".json,application/json"
+                class="hidden" />
+              <p id="backupStatus" class="text-[11px] text-slate-400 mt-1"></p>
+            </div>
+
+            <!-- CSV export for Excel -->
+            <div class="border-t border-slate-100 pt-3 space-y-1">
+              <p class="text-xs text-slate-500">
+                ייצוא ל‑CSV מיועד לפתיחה באקסל וכולל רק את הרישומים:
+                <span class="font-semibold"
+                  >Date, Weight, ActivityType, Notes</span
+                >.
+              </p>
+              <button
+                id="exportCsvButton"
+                class="mt-1 inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-sky-500 text-white px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
+                <i class="fa-solid fa-file-arrow-down"></i>
+                <span>ייצוא ל‑CSV (Excel)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Danger zone / Clear data -->
+          <div class="bg-white rounded-2xl shadow-sm p-4 space-y-2">
+            <div class="flex items-center space-x-2 space-x-reverse mb-1">
+              <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
+              <h2 class="text-sm font-semibold text-slate-700">איפוס נתונים</h2>
+            </div>
+            <p class="text-xs text-slate-500">
+              איפוס מוחק את כל הרישומים שנשמרו מקומית בדפדפן. מומלץ לייצא קודם
+              את הנתונים לקובץ CSV.
+            </p>
+            <button
+              id="clearDataButton"
+              class="mt-1 inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-rose-500 text-white px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
+              <i class="fa-solid fa-trash-can"></i>
+              <span>איפוס כל הנתונים</span>
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div
+      id="settingsModal"
+      class="fixed inset-0 bg-slate-900/40 z-40 flex items-center justify-center px-4 hidden">
+      <div class="bg-white rounded-2xl shadow-lg w-full max-w-sm p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2 space-x-reverse">
+            <i class="fa-solid fa-user text-emerald-500"></i>
+            <h2 class="text-sm font-semibold text-slate-700">הגדרות אישיות</h2>
+          </div>
+          <button
+            id="closeSettingsModalButton"
+            class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100"
+            aria-label="סגירת חלון הגדרות">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        </div>
+        <p class="text-xs text-slate-500">
+          שמרו כאן את הפרטים האישיים שלכם כדי לקבל חישובי BMI ותזכורות שקילה
+          חכמות.
+        </p>
+        <form id="settingsForm" class="space-y-3">
+          <div class="space-y-1">
+            <label for="settingsFirstName" class="text-xs text-slate-600"
+              >שם פרטי</label
+            >
+            <input
+              id="settingsFirstName"
+              type="text"
+              maxlength="30"
+              placeholder="לדוגמה: בני"
+              class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50" />
+          </div>
+
+          <div class="space-y-1">
+            <label for="settingsHeightCm" class="text-xs text-slate-600"
+              >גובה (ס&quot;מ)</label
+            >
+            <input
+              id="settingsHeightCm"
+              type="number"
+              min="80"
+              max="250"
+              step="1"
+              inputmode="decimal"
+              placeholder="לדוגמה: 175"
+              class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50" />
+          </div>
+
+          <div class="space-y-1">
+            <label for="settingsWeighInDay" class="text-xs text-slate-600"
+              >יום שקילה שבועי</label
+            >
+            <select
+              id="settingsWeighInDay"
+              class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50">
+              <option value="">בחר/י יום...</option>
+              <option value="0">ראשון</option>
+              <option value="1">שני</option>
+              <option value="2">שלישי</option>
+              <option value="3">רביעי</option>
+              <option value="4">חמישי</option>
+              <option value="5">שישי</option>
+              <option value="6">שבת</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-500 text-white py-2.5 text-sm font-semibold shadow-sm active:scale-[0.99] transition-transform">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>שמור הגדרות</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav
+      class="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-200 backdrop-blur-sm">
+      <div class="max-w-md mx-auto flex">
+        <button
+          class="nav-button flex-1 flex flex-col items-center justify-center py-2 text-xs text-emerald-600 font-semibold"
+          data-target="view-input">
+          <i class="fa-solid fa-house mb-0.5 text-base"></i>
+          <span>בית / רישום</span>
+        </button>
+        <button
+          class="nav-button flex-1 flex flex-col items-center justify-center py-2 text-xs text-slate-500"
+          data-target="view-history">
+          <i class="fa-solid fa-table-list mb-0.5 text-base"></i>
+          <span>היסטוריה</span>
+        </button>
+        <button
+          class="nav-button flex-1 flex flex-col items-center justify-center py-2 text-xs text-slate-500"
+          data-target="view-settings">
+          <i class="fa-solid fa-gear mb-0.5 text-base"></i>
+          <span>הגדרות</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Application Scripts -->
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
