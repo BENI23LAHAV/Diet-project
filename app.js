@@ -667,47 +667,91 @@ function updateNotificationsStatus() {
 // ----- IMPORT / EXPORT LOGIC (FIXED) -----
 
 // Smart export helper: try Web Share API with files, fall back to download.
-// פונקציית ייצוא משופרת: מנסה לשתף, ואם לא - מאלצת הורדה בשיטת DataURI
+// Smart Export: Share -> Download -> Clipboard Fallback
 async function smartExport(blob, fileName, title) {
-  // שלב 1: נסיון שיתוף רגיל (כי זה הכי נקי באנדרואיד)
-  // אם זה לא נוח לך, אתה יכול למחוק את הבלוק הזה של ה-if
-  const file = new File([blob], fileName, { type: blob.type });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({
-        files: [file],
-        title: title,
-        text: "קובץ נתונים מאפליקציית הדיאטה",
-      });
-      return;
-    } catch (err) {
-      console.log("Sharing failed or cancelled, trying download...", err);
+  try {
+    // --- נסיון 1: שיתוף (הכי נוח בטלפון) ---
+    const file = new File([blob], fileName, { type: blob.type });
+
+    // בודקים אם הדפדפן תומך בשיתוף קבצים
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: title,
+          text: "הנה קובץ הנתונים שלך",
+        });
+        return; // הצליח! עוצרים כאן.
+      } catch (shareError) {
+        console.warn(
+          "Share failed or cancelled, trying download...",
+          shareError,
+        );
+        // אם השיתוף נכשל (או שהמשתמש ביטל), ממשיכים לנסיון הבא
+      }
     }
+
+    // --- נסיון 2: הורדה (Data URI שעוקף חלק מהחסימות) ---
+    // ממירים את הקובץ לטקסט base64
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      try {
+        const dataUrl = e.target.result;
+
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = fileName;
+        a.style.display = "none";
+        document.body.appendChild(a);
+
+        // לחיצה וירטואלית
+        a.click();
+
+        // ניקוי
+        setTimeout(() => document.body.removeChild(a), 1000);
+      } catch (downloadError) {
+        // אם ההורדה נכשלה (למשל חסימת אבטחה קשה) - מפעילים את תוכנית החירום
+        console.error(
+          "Download failed, using clipboard fallback",
+          downloadError,
+        );
+        fallbackToClipboard(blob);
+      }
+    };
+
+    // טיפול בשגיאות קריאה של הקובץ עצמו
+    reader.onerror = function () {
+      fallbackToClipboard(blob);
+    };
+
+    reader.readAsDataURL(blob);
+  } catch (globalError) {
+    // --- נסיון 3 (רשת ביטחון): העתקה ללוח ---
+    console.error("Critical error, falling back to clipboard", globalError);
+    fallbackToClipboard(blob);
   }
+}
 
-  // שלב 2: הורדה בכוח (השיטה שעוקפת את ה-WebView)
-  const reader = new FileReader();
+// פונקציית העזר למקרה חירום (העתקה + הוראות)
+async function fallbackToClipboard(blob) {
+  try {
+    const textData = await blob.text();
+    await navigator.clipboard.writeText(textData);
 
-  reader.onload = function (e) {
-    const dataUrl = e.target.result; // כאן הקובץ הופך למחרוזת ארוכה
-
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = fileName;
-    a.style.display = "none";
-    document.body.appendChild(a);
-
-    // לחיצה וירטואלית
-    a.click();
-
-    // ניקוי
-    setTimeout(() => {
-      document.body.removeChild(a);
-    }, 1000);
-  };
-
-  // הפעלת הקריאה
-  reader.readAsDataURL(blob);
+    alert(
+      "בגלל מגבלות אבטחה בטלפון, ההורדה האוטומטית נכשלה.\n\n" +
+        "✅ אבל הנתונים הועתקו ללוח בהצלחה!\n\n" +
+        "כדי לשמור אותם:\n" +
+        "1. פתח את הוואטסאפ או המייל.\n" +
+        "2. עשה 'הדבק' (Paste).\n" +
+        "3. שלח לעצמך את ההודעה.",
+    );
+  } catch (err) {
+    alert(
+      "מצטערים, הטלפון חוסם גם העתקה אוטומטית. נסה להשתמש בכפתורי ההעתקה הידניים.",
+    );
+  }
 }
 
 // Export Full JSON (Settings + Logs)
@@ -1094,42 +1138,23 @@ async function copyBackupToClipboard() {
 }
 // --- קסם: יצירת תזכורת ביומן הטלפון ---
 function addToCalendar() {
-  // 1. יצירת תוכן הקובץ (תזכורת יומית ב-20:00)
-  const event = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "BEGIN:VEVENT",
-    "SUMMARY:🏃 תזכורת: יומן מעקב דיאטה",
-    "DESCRIPTION:הזמן היומי שלך למלא משקל ופעילות באפליקציה!",
-    "RRULE:FREQ=DAILY", // חוזר כל יום
-    "DTSTART:20240220T180000Z", // שעה 20:00 שעון ישראל (18:00 UTC)
-    "DURATION:PT10M",
-    "ACTION:DISPLAY",
-    "TRIGGER:-PT0M",
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].join("\r\n");
+  // הגדרת הפרטים
+  const title = encodeURIComponent("🏃 תזכורת: יומן מעקב דיאטה");
+  const details = encodeURIComponent(
+    "הזמן היומי שלך למלא משקל ופעילות באפליקציה! היכנס לקישור.",
+  );
 
-  // 2. המרה לקובץ
-  const blob = new Blob([event], { type: "text/calendar;charset=utf-8" });
+  // זמנים (מתחיל מהיום ב-20:00 עד 20:15)
+  const now = new Date();
+  now.setHours(20, 0, 0, 0);
+  const start = now.toISOString().replace(/-|:|\.\d\d\d/g, ""); // פורמט מיוחד לגוגל
+  const end = new Date(now.getTime() + 15 * 60000)
+    .toISOString()
+    .replace(/-|:|\.\d\d\d/g, "");
 
-  // 3. הטריק: המרה ל-DataURL (כמו ב-CSV) כדי לעקוף חסימות הורדה
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    const dataUrl = e.target.result;
+  // יצירת הקישור הישיר לגוגל קלנדר
+  const googleCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${start}/${end}&recur=RRULE:FREQ=DAILY`;
 
-    // יצירת לינק וירטואלי ולחיצה עליו
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = "diet_daily_reminder.ics";
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-
-    // ניקוי
-    setTimeout(() => document.body.removeChild(a), 1000);
-  };
-
-  // הפעלה
-  reader.readAsDataURL(blob);
+  // פתיחה בחלון חדש (הדפדפן של ה-QIN יפתח את זה כאתר רגיל)
+  window.open(googleCalUrl, "_blank");
 }
