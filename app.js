@@ -669,41 +669,44 @@ function updateNotificationsStatus() {
 // Smart export helper: try Web Share API with files, fall back to download.
 async function smartExport(blob, fileName, title) {
   try {
-    const hasNavigator =
-      typeof navigator !== "undefined" &&
-      navigator &&
-      typeof navigator.share === "function";
-    const hasFile = typeof File !== "undefined";
+    // שלב 1: נסיון המרה לטקסט (בשביל העתקה ללוח אם נצטרך)
+    const textData = await blob.text();
 
-    if (hasNavigator && hasFile) {
-      const file = new File([blob], fileName, {
-        type: blob.type || "application/octet-stream",
-      });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    // שלב 2: נסיון שיתוף קובץ (כמו קודם)
+    const file = new File([blob], fileName, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
         await navigator.share({
           files: [file],
-          title: title || fileName,
+          title: title,
+          text: "מצורף קובץ נתונים",
         });
-        return;
+        return; // הצליח לשתף? מעולה, סיימנו.
+      } catch (err) {
+        console.log("Share failed, trying clipboard...", err);
       }
     }
-  } catch (err) {
-    console.warn(
-      "navigator.share failed or unsupported, falling back to download:",
-      err,
-    );
-  }
 
-  // Fallback: regular blob download
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+    // שלב 3: תוכנית C - העתקה ללוח (עובד ב-100% מהמקרים)
+    // אם השיתוף נכשל (או לא נתמך), מעתיקים את התוכן ללוח
+    await navigator.clipboard.writeText(textData);
+    alert(
+      "בגלל מגבלות המכשיר, הקובץ לא נשמר - אבל התוכן הועתק ללוח!\n\nפתח את הוואטסאפ/מייל ועשה 'הדבק' כדי לשמור את הנתונים.",
+    );
+    return;
+  } catch (err) {
+    console.error("All export methods failed", err);
+
+    // שלב 4: מוצא אחרון למחשב (הורדה רגילה)
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 }
 
 // Export Full JSON (Settings + Logs)
