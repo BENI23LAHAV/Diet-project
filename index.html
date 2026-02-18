@@ -49,14 +49,6 @@
       <main class="flex-1 space-y-4 pb-4">
         <!-- INPUT (Dashboard + Quick Entry) -->
         <section id="view-input" class="space-y-4">
-          <!-- Toggle Form Visibility -->
-          <button
-            id="toggleFormButton"
-            class="w-full flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 py-2 text-xs font-semibold active:scale-[0.99] transition-transform">
-            <i class="fa-solid fa-chevron-up text-[10px]"></i>
-            <span>הסתר טופס רישום</span>
-          </button>
-
           <!-- Summary Cards -->
           <div class="grid grid-cols-2 gap-2">
             <div
@@ -169,12 +161,20 @@
           </div>
 
           <!-- Quick Input Form -->
+          <!-- Toggle Form Visibility -->
+          <button
+            id="toggleFormButton"
+            class="w-full flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 py-2 text-xs font-semibold active:scale-[0.99] transition-transform">
+            <i class="fa-solid fa-chevron-up text-[10px]"></i>
+            <span>הסתר טופס רישום</span>
+          </button>
           <div
             id="entryFormCard"
             class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2 space-x-reverse">
                 <i class="fa-solid fa-pen-to-square text-emerald-500"></i>
+
                 <h2 class="text-sm font-semibold text-slate-700">
                   רישום יומי מהיר
                 </h2>
