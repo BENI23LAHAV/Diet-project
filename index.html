@@ -299,30 +299,41 @@
 
         <!-- SETTINGS -->
         <section id="view-settings" class="space-y-3 hidden">
-          <!-- Notifications -->
-          <div class="bg-white rounded-2xl shadow-sm p-4 space-y-2">
+          <div class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
             <div class="flex items-center space-x-2 space-x-reverse mb-1">
               <i class="fa-solid fa-bell text-amber-500"></i>
               <h2 class="text-sm font-semibold text-slate-700">
-                תזכורות והתראות
+                תזכורות ומוטיבציה
               </h2>
             </div>
+
             <p class="text-xs text-slate-500 leading-snug">
-              אפשר התראות בדפדפן כדי לקבל מנת מוטיבציה יומית ותזכורת ליום השקילה
-              השבועי שלך.
+              הגדר תזכורת יומית קבועה כדי לא לשכוח לרשום את הפעילות והמשקל.
             </p>
+
             <button
-              id="notificationsButton"
-              class="mt-1 inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl border border-emerald-300 text-emerald-700 px-3 py-2 text-xs font-semibold bg-emerald-50 active:scale-[0.99] transition-transform">
-              <i class="fa-solid fa-bell"></i>
-              <span>אפשר התראות חכמות</span>
+              onclick="addToCalendar()"
+              class="w-full mt-2 inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-3 text-sm font-bold shadow-md active:scale-[0.98] transition-transform">
+              <i class="fa-regular fa-calendar-check"></i>
+              <span>הוסף תזכורת יומית ליומן</span>
             </button>
-            <p
-              id="notificationsStatus"
-              class="text-[11px] text-slate-400 mt-1"></p>
+            <p class="text-[10px] text-center text-slate-400">
+              *בלחיצה ייפתח היומן בטלפון לאישור התזכורת
+            </p>
+
+            <div class="border-t border-slate-100 mt-3 pt-3">
+              <button
+                id="notificationsButton"
+                class="w-full inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl border border-slate-200 text-slate-600 px-3 py-2 text-xs font-semibold bg-slate-50 active:scale-[0.99] transition-transform">
+                <i class="fa-solid fa-bell"></i>
+                <span>אפשר התראות דפדפן (רגיל)</span>
+              </button>
+              <p
+                id="notificationsStatus"
+                class="text-[11px] text-slate-400 mt-1 text-center"></p>
+            </div>
           </div>
 
-          <!-- Data & Backup -->
           <div class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
             <div class="flex items-center space-x-2 space-x-reverse mb-1">
               <i class="fa-solid fa-database text-sky-500"></i>
@@ -331,21 +342,28 @@
               </h2>
             </div>
 
-            <!-- Full JSON Backup -->
             <div class="space-y-1">
               <p class="text-xs text-slate-500">
                 גיבוי מלא (JSON) כולל גם את ההגדרות האישיות וגם את כל הרישומים.
-                מומלץ לבצע גיבוי לפני החלפת מכשיר או דפדפן.
               </p>
-              <button
-                id="downloadBackupJsonButton"
-                class="mt-1 inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-500 text-white px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
-                <i class="fa-solid fa-cloud-arrow-down"></i>
-                <span>הורדת גיבוי מלא (מומלץ)</span>
-              </button>
+
+              <div class="flex flex-wrap gap-2 mt-2">
+                <button
+                  id="downloadBackupJsonButton"
+                  class="inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-500 text-white px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
+                  <i class="fa-solid fa-cloud-arrow-down"></i>
+                  <span>הורד גיבוי (קובץ)</span>
+                </button>
+
+                <button
+                  onclick="copyBackupToClipboard()"
+                  class="inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
+                  <i class="fa-regular fa-copy"></i>
+                  <span>העתק ללוח</span>
+                </button>
+              </div>
             </div>
 
-            <!-- Restore from JSON Backup -->
             <div class="border-t border-slate-100 pt-3 space-y-1">
               <p class="text-xs text-slate-500">
                 שחזור מגיבוי (JSON) ישחזר את ההגדרות האישיות שלך וימזג חכם את
@@ -365,23 +383,28 @@
               <p id="backupStatus" class="text-[11px] text-slate-400 mt-1"></p>
             </div>
 
-            <!-- CSV export for Excel -->
             <div class="border-t border-slate-100 pt-3 space-y-1">
               <p class="text-xs text-slate-500">
-                ייצוא ל‑CSV מיועד לפתיחה באקסל וכולל רק את הרישומים:
-                <span class="font-semibold"
-                  >Date, Weight, ActivityType, Notes</span
-                >.
+                ייצוא ל‑CSV מיועד לפתיחה באקסל וכולל את הרישומים, קלוריות וזמן.
               </p>
-              <button
-                id="exportCsvButton"
-                class="mt-1 inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-sky-500 text-white px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
-                <i class="fa-solid fa-file-arrow-down"></i>
-                <span>ייצוא ל‑CSV (Excel)</span>
-              </button>
+
+              <div class="flex flex-wrap gap-2 mt-2">
+                <button
+                  id="exportCsvButton"
+                  class="inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-sky-500 text-white px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
+                  <i class="fa-solid fa-file-arrow-down"></i>
+                  <span>ייצוא CSV (קובץ)</span>
+                </button>
+
+                <button
+                  onclick="copyCsvToClipboard()"
+                  class="inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
+                  <i class="fa-regular fa-copy"></i>
+                  <span>העתק ללוח</span>
+                </button>
+              </div>
             </div>
           </div>
-
           <!-- Danger zone / Clear data -->
           <div class="bg-white rounded-2xl shadow-sm p-4 space-y-2">
             <div class="flex items-center space-x-2 space-x-reverse mb-1">

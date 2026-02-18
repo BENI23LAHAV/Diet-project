@@ -667,46 +667,47 @@ function updateNotificationsStatus() {
 // ----- IMPORT / EXPORT LOGIC (FIXED) -----
 
 // Smart export helper: try Web Share API with files, fall back to download.
+// פונקציית ייצוא משופרת: מנסה לשתף, ואם לא - מאלצת הורדה בשיטת DataURI
 async function smartExport(blob, fileName, title) {
-  try {
-    // שלב 1: נסיון המרה לטקסט (בשביל העתקה ללוח אם נצטרך)
-    const textData = await blob.text();
-
-    // שלב 2: נסיון שיתוף קובץ (כמו קודם)
-    const file = new File([blob], fileName, { type: blob.type });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: title,
-          text: "מצורף קובץ נתונים",
-        });
-        return; // הצליח לשתף? מעולה, סיימנו.
-      } catch (err) {
-        console.log("Share failed, trying clipboard...", err);
-      }
+  // שלב 1: נסיון שיתוף רגיל (כי זה הכי נקי באנדרואיד)
+  // אם זה לא נוח לך, אתה יכול למחוק את הבלוק הזה של ה-if
+  const file = new File([blob], fileName, { type: blob.type });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: title,
+        text: "קובץ נתונים מאפליקציית הדיאטה",
+      });
+      return;
+    } catch (err) {
+      console.log("Sharing failed or cancelled, trying download...", err);
     }
-
-    // שלב 3: תוכנית C - העתקה ללוח (עובד ב-100% מהמקרים)
-    // אם השיתוף נכשל (או לא נתמך), מעתיקים את התוכן ללוח
-    await navigator.clipboard.writeText(textData);
-    alert(
-      "בגלל מגבלות המכשיר, הקובץ לא נשמר - אבל התוכן הועתק ללוח!\n\nפתח את הוואטסאפ/מייל ועשה 'הדבק' כדי לשמור את הנתונים.",
-    );
-    return;
-  } catch (err) {
-    console.error("All export methods failed", err);
-
-    // שלב 4: מוצא אחרון למחשב (הורדה רגילה)
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   }
+
+  // שלב 2: הורדה בכוח (השיטה שעוקפת את ה-WebView)
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+    const dataUrl = e.target.result; // כאן הקובץ הופך למחרוזת ארוכה
+
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = fileName;
+    a.style.display = "none";
+    document.body.appendChild(a);
+
+    // לחיצה וירטואלית
+    a.click();
+
+    // ניקוי
+    setTimeout(() => {
+      document.body.removeChild(a);
+    }, 1000);
+  };
+
+  // הפעלת הקריאה
+  reader.readAsDataURL(blob);
 }
 
 // Export Full JSON (Settings + Logs)
@@ -1048,3 +1049,87 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 });
+// --- פונקציות העתקה ללוח (Clipboard) ---
+
+// העתקת ה-CSV ללוח
+async function copyCsvToClipboard() {
+  if (!entries.length) return alert("אין נתונים להעתקה");
+
+  // בניית ה-CSV בזיכרון
+  const header = [
+    "Date",
+    "Weight (kg)",
+    "Activity",
+    "Duration",
+    "Calories",
+    "Notes",
+  ];
+  const rows = entries.map((e) => {
+    const note = (e.notes || "").replace(/"/g, '""');
+    return `${e.date},${e.weight || ""},${e.activityType},${e.duration || 0},${e.calories || 0},"${note}"`;
+  });
+  const csvText = [header.join(","), ...rows].join("\n");
+
+  try {
+    await navigator.clipboard.writeText(csvText);
+    alert("הנתונים הועתקו ללוח! אפשר להדביק בוואטסאפ.");
+  } catch (err) {
+    alert("שגיאה בהעתקה. נסה שוב.");
+  }
+}
+
+// העתקת הגיבוי המלא (JSON) ללוח
+async function copyBackupToClipboard() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    logs: entries,
+  };
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+    alert("קוד הגיבוי הועתק! שמור אותו במקום בטוח.");
+  } catch (err) {
+    alert("שגיאה בהעתקה.");
+  }
+}
+// --- קסם: יצירת תזכורת ביומן הטלפון ---
+function addToCalendar() {
+  // 1. יצירת תוכן הקובץ (תזכורת יומית ב-20:00)
+  const event = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "BEGIN:VEVENT",
+    "SUMMARY:🏃 תזכורת: יומן מעקב דיאטה",
+    "DESCRIPTION:הזמן היומי שלך למלא משקל ופעילות באפליקציה!",
+    "RRULE:FREQ=DAILY", // חוזר כל יום
+    "DTSTART:20240220T180000Z", // שעה 20:00 שעון ישראל (18:00 UTC)
+    "DURATION:PT10M",
+    "ACTION:DISPLAY",
+    "TRIGGER:-PT0M",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  // 2. המרה לקובץ
+  const blob = new Blob([event], { type: "text/calendar;charset=utf-8" });
+
+  // 3. הטריק: המרה ל-DataURL (כמו ב-CSV) כדי לעקוף חסימות הורדה
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const dataUrl = e.target.result;
+
+    // יצירת לינק וירטואלי ולחיצה עליו
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = "diet_daily_reminder.ics";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+
+    // ניקוי
+    setTimeout(() => document.body.removeChild(a), 1000);
+  };
+
+  // הפעלה
+  reader.readAsDataURL(blob);
+}
