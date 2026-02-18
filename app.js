@@ -666,8 +666,48 @@ function updateNotificationsStatus() {
 
 // ----- IMPORT / EXPORT LOGIC (FIXED) -----
 
+// Smart export helper: try Web Share API with files, fall back to download.
+async function smartExport(blob, fileName, title) {
+  try {
+    const hasNavigator =
+      typeof navigator !== "undefined" &&
+      navigator &&
+      typeof navigator.share === "function";
+    const hasFile = typeof File !== "undefined";
+
+    if (hasNavigator && hasFile) {
+      const file = new File([blob], fileName, {
+        type: blob.type || "application/octet-stream",
+      });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: title || fileName,
+        });
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn(
+      "navigator.share failed or unsupported, falling back to download:",
+      err,
+    );
+  }
+
+  // Fallback: regular blob download
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // Export Full JSON (Settings + Logs)
-function exportFullBackupJson() {
+async function exportFullBackupJson() {
   const data = {
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -677,43 +717,46 @@ function exportFullBackupJson() {
 
   const jsonStr = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonStr], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `DietTracker_Backup_${getTodayDateString()}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const fileName = `DietTracker_Backup_${getTodayDateString()}.json`;
+  await smartExport(blob, fileName, "גיבוי מלא - יומן תזונה וכושר");
 }
 
 // Export CSV (Logs only)
-function exportToCsv() {
+async function exportToCsv() {
   if (!entries.length) {
     alert("אין נתונים לייצוא");
     return;
   }
 
-  const header = ["Date", "Weight (kg)", "Activity", "Notes"];
+  // הוספנו כאן את העמודות החדשות: זמן (דקות) וקלוריות
+  const header = [
+    "Date",
+    "Weight (kg)",
+    "Activity",
+    "Duration (min)",
+    "Calories",
+    "Notes",
+  ];
+
   const rows = entries.map((e) => {
     // Escape quotes
     const note = (e.notes || "").replace(/"/g, '""');
     const weightOut =
       typeof e.weight === "number" && !isNaN(e.weight) ? e.weight : "";
-    return `${e.date},${weightOut},${e.activityType},"${note}"`;
+
+    // שליפת הנתונים החדשים (אם אין, נכתוב 0)
+    const duration = e.duration || 0;
+    const calories = e.calories || 0;
+
+    return `${e.date},${weightOut},${e.activityType},${duration},${calories},"${note}"`;
   });
 
   const csvContent = "\uFEFF" + [header.join(","), ...rows].join("\n"); // Add BOM for Hebrew Excel
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
+  const fileName = `DietTracker_Log_${getTodayDateString()}.csv`;
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `DietTracker_Log_${getTodayDateString()}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  // הקריאה לפונקציה החכמה שתפתח את תפריט השיתוף בטלפון
+  await smartExport(blob, fileName, "ייצוא רישומי פעילות ל‑CSV");
 }
 
 // Restore Logic (The Fix)
