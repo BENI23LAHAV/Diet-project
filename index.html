@@ -7,10 +7,8 @@
     <meta name="theme-color" content="#10b981" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- FontAwesome Icons -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -18,14 +16,11 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer" />
 
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body
     class="min-h-screen bg-gradient-to-b from-emerald-50 to-sky-50 text-slate-900 flex flex-col font-sans">
-    <!-- App Shell -->
     <div class="flex-1 flex flex-col max-w-md mx-auto w-full pb-20 px-3">
-      <!-- Header -->
       <header class="pt-4 pb-3">
         <div class="flex items-center justify-between">
           <div>
@@ -38,18 +33,19 @@
           </div>
           <button
             id="openSettingsModalButton"
-            class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 shadow-sm active:scale-95 transition-transform"
+            class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 shadow-sm active:scale-95 transition-transform overflow-hidden"
             aria-label="הגדרות משתמש">
-            <i class="fa-solid fa-user-gear text-lg"></i>
+            <div
+              id="userProfileIconContainer"
+              class="w-full h-full flex items-center justify-center">
+              <i class="fa-solid fa-user-gear text-lg"></i>
+            </div>
           </button>
         </div>
       </header>
 
-      <!-- Main Views Container -->
       <main class="flex-1 space-y-4 pb-4">
-        <!-- INPUT (Dashboard + Quick Entry) -->
         <section id="view-input" class="space-y-4">
-          <!-- Summary Cards -->
           <div class="grid grid-cols-2 gap-2">
             <div
               class="bg-white rounded-2xl shadow-sm p-3 flex flex-col items-start">
@@ -111,7 +107,6 @@
             </div>
           </div>
 
-          <!-- BMI Card -->
           <div
             id="bmiCard"
             class="bg-white rounded-2xl shadow-sm p-3 flex items-center justify-between">
@@ -132,7 +127,6 @@
             </div>
           </div>
 
-          <!-- Daily Motivation -->
           <div
             class="bg-gradient-to-l from-emerald-500 to-sky-500 rounded-2xl shadow-sm p-3 text-white flex items-start space-x-2 space-x-reverse">
             <div class="mt-0.5">
@@ -144,7 +138,6 @@
             </div>
           </div>
 
-          <!-- Weight Trend Chart -->
           <div class="bg-white rounded-2xl shadow-sm p-3">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm font-semibold text-slate-700"
@@ -160,17 +153,15 @@
             </p>
           </div>
 
-          <!-- Quick Input Form -->
-          <!-- Toggle Form Visibility -->
           <button
             id="toggleFormButton"
             class="w-full flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 py-2 text-xs font-semibold active:scale-[0.99] transition-transform">
             <i class="fa-solid fa-chevron-up text-[10px]"></i>
-            <span>הסתר טופס רישום</span>
+            <span>הצג טופס רישום</span>
           </button>
           <div
             id="entryFormCard"
-            class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+            class="hidden bg-white rounded-2xl shadow-sm p-4 space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2 space-x-reverse">
                 <i class="fa-solid fa-pen-to-square text-emerald-500"></i>
@@ -258,7 +249,6 @@
           </div>
         </section>
 
-        <!-- HISTORY -->
         <section id="view-history" class="space-y-3 hidden">
           <div
             class="bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between">
@@ -286,9 +276,9 @@
                     <th class="py-2 px-2 text-center font-medium w-10">מחק</th>
                   </tr>
                 </thead>
-                <tbody id="historyTableBody" class="divide-y divide-slate-100">
-                  <!-- Filled dynamically -->
-                </tbody>
+                <tbody
+                  id="historyTableBody"
+                  class="divide-y divide-slate-100"></tbody>
               </table>
             </div>
             <p class="text-[11px] text-slate-400 px-4 py-2">
@@ -297,7 +287,6 @@
           </div>
         </section>
 
-        <!-- SETTINGS -->
         <section id="view-settings" class="space-y-3 hidden">
           <div class="bg-white rounded-2xl shadow-sm p-4 space-y-3">
             <div class="flex items-center space-x-2 space-x-reverse mb-1">
@@ -369,12 +358,23 @@
                 שחזור מגיבוי (JSON) ישחזר את ההגדרות האישיות שלך וימזג חכם את
                 הרישומים לפי תאריך.
               </p>
-              <button
-                id="restoreBackupJsonButton"
-                class="mt-1 inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl border border-slate-300 text-slate-700 px-3 py-2 text-xs font-semibold bg-slate-50 active:scale-[0.99] transition-transform">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                <span>שחזור מגיבוי</span>
-              </button>
+
+              <div class="flex flex-wrap gap-2 mt-2">
+                <button
+                  id="restoreBackupJsonButton"
+                  class="inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-sky-500 text-white px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>שחזור מקובץ</span>
+                </button>
+
+                <button
+                  onclick="restoreFromText()"
+                  class="inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl border border-slate-300 text-slate-700 px-3 py-2 text-xs font-semibold bg-slate-50 active:scale-[0.99] transition-transform">
+                  <i class="fa-solid fa-paste"></i>
+                  <span>שחזור מהדבקת טקסט</span>
+                </button>
+              </div>
+
               <input
                 id="restoreBackupJsonInput"
                 type="file"
@@ -391,7 +391,7 @@
               <div class="flex flex-wrap gap-2 mt-2">
                 <button
                   id="exportCsvButton"
-                  class="inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-sky-500 text-white px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
+                  class="inline-flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-500 text-white px-3 py-2 text-xs font-semibold shadow-sm active:scale-[0.99] transition-transform">
                   <i class="fa-solid fa-file-arrow-down"></i>
                   <span>ייצוא CSV (קובץ)</span>
                 </button>
@@ -405,7 +405,6 @@
               </div>
             </div>
           </div>
-          <!-- Danger zone / Clear data -->
           <div class="bg-white rounded-2xl shadow-sm p-4 space-y-2">
             <div class="flex items-center space-x-2 space-x-reverse mb-1">
               <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
@@ -426,7 +425,6 @@
       </main>
     </div>
 
-    <!-- Settings Modal -->
     <div
       id="settingsModal"
       class="fixed inset-0 bg-slate-900/40 z-40 flex items-center justify-center px-4 hidden">
@@ -493,6 +491,18 @@
             </select>
           </div>
 
+          <div class="space-y-1 mt-3">
+            <label class="text-xs font-semibold text-slate-600"
+              >קישור לתמונת פרופיל (URL)</label
+            >
+            <input
+              type="url"
+              id="profilePicInput"
+              placeholder="הדבק לינק לתמונה..."
+              class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-500 focus:bg-white transition-colors text-left"
+              dir="ltr" />
+          </div>
+
           <button
             type="submit"
             class="w-full flex items-center justify-center space-x-2 space-x-reverse rounded-2xl bg-emerald-500 text-white py-2.5 text-sm font-semibold shadow-sm active:scale-[0.99] transition-transform">
@@ -503,7 +513,6 @@
       </div>
     </div>
 
-    <!-- Bottom Navigation -->
     <nav
       class="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-200 backdrop-blur-sm">
       <div class="max-w-md mx-auto flex">
@@ -528,7 +537,6 @@
       </div>
     </nav>
 
-    <!-- Application Scripts -->
     <script src="data.js"></script>
     <script src="app.js"></script>
   </body>

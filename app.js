@@ -45,6 +45,7 @@ function loadSettings() {
       firstName: "",
       heightCm: null,
       weighInDay: null,
+      profilePicUrl: "", // הוספנו לכאן את שדה התמונה כברירת מחדל
     };
 
     if (!raw) return defaults;
@@ -55,10 +56,16 @@ function loadSettings() {
       heightCm: Number(parsed.heightCm) || null,
       weighInDay:
         typeof parsed.weighInDay === "number" ? parsed.weighInDay : null,
+      profilePicUrl: parsed.profilePicUrl || "", // התוספת הקריטית ששולפת את הלינק!
     };
   } catch (e) {
     console.error("Failed to parse user settings:", e);
-    return { firstName: "", heightCm: null, weighInDay: null };
+    return {
+      firstName: "",
+      heightCm: null,
+      weighInDay: null,
+      profilePicUrl: "",
+    };
   }
 }
 
@@ -120,6 +127,7 @@ function populateSettingsForm() {
   const firstNameInput = document.getElementById("settingsFirstName");
   const heightInput = document.getElementById("settingsHeightCm");
   const weighInSelect = document.getElementById("settingsWeighInDay");
+  const profilePicInput = document.getElementById("profilePicInput"); // <--- הוספנו את השדה של התמונה
 
   if (!firstNameInput || !heightInput || !weighInSelect) return;
 
@@ -127,6 +135,11 @@ function populateSettingsForm() {
   heightInput.value = userSettings.heightCm || "";
   weighInSelect.value =
     userSettings.weighInDay !== null ? String(userSettings.weighInDay) : "";
+
+  // <--- הוספנו את טעינת הלינק לתוך השדה
+  if (profilePicInput) {
+    profilePicInput.value = userSettings.profilePicUrl || "";
+  }
 }
 
 function openSettingsModal() {
@@ -765,8 +778,40 @@ async function exportFullBackupJson() {
 
   const jsonStr = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonStr], { type: "application/json" });
-  const fileName = `DietTracker_Backup_${getTodayDateString()}.json`;
+  const fileName = `גיבוי_דיאטה_${getFormattedDateForFile()}.json`; // <-- תוקן
   await smartExport(blob, fileName, "גיבוי מלא - יומן תזונה וכושר");
+}
+
+// Export CSV (Logs only)
+async function exportToCsv() {
+  if (!entries.length) {
+    alert("אין נתונים לייצוא");
+    return;
+  }
+
+  const header = [
+    "Date",
+    "Weight (kg)",
+    "Activity",
+    "Duration (min)",
+    "Calories",
+    "Notes",
+  ];
+
+  const rows = entries.map((e) => {
+    const note = (e.notes || "").replace(/"/g, '""');
+    const weightOut =
+      typeof e.weight === "number" && !isNaN(e.weight) ? e.weight : "";
+    const duration = e.duration || 0;
+    const calories = e.calories || 0;
+    return `${e.date},${weightOut},${e.activityType},${duration},${calories},"${note}"`;
+  });
+
+  const csvContent = "\uFEFF" + [header.join(","), ...rows].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const fileName = `אקסל_דיאטה_${getFormattedDateForFile()}.csv`; // <-- תוקן
+
+  await smartExport(blob, fileName, "ייצוא רישומי פעילות ל‑CSV");
 }
 
 // Export CSV (Logs only)
@@ -882,6 +927,8 @@ function restoreFullBackupJsonFromText(jsonText) {
 
 // ----- MAIN REFRESH CONTROLLER -----
 
+// ----- MAIN REFRESH CONTROLLER -----
+
 function refreshAllUI() {
   updateGreeting();
   refreshDashboardSummary();
@@ -889,6 +936,10 @@ function refreshAllUI() {
   refreshChart();
   refreshBmiDisplay();
   updateNotificationsStatus();
+
+  if (typeof updateProfilePic === "function") {
+    updateProfilePic();
+  }
 }
 
 // ----- EVENT LISTENERS (INIT) -----
@@ -1027,10 +1078,16 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       const wDay = document.getElementById("settingsWeighInDay").value;
-      userSettings.weighInDay = wDay !== "" ? Number(wDay) : null;
+      userSettings.weighInDay = wDay !== "" ? Number(wDay) : null; // --- התוספת לתמונת הפרופיל ---
+
+      const profilePicInput = document.getElementById("profilePicInput");
+      if (profilePicInput) {
+        userSettings.profilePicUrl = profilePicInput.value.trim();
+      }
 
       saveSettings(userSettings);
       refreshAllUI();
+      if (typeof updateProfilePic === "function") updateProfilePic(); // טעינת התמונה מיד
       closeSettingsModal();
       alert("הגדרות נשמרו");
     });
@@ -1157,4 +1214,50 @@ function addToCalendar() {
 
   // פתיחה בחלון חדש (הדפדפן של ה-QIN יפתח את זה כאתר רגיל)
   window.open(googleCalUrl, "_blank");
+}
+// --- פונקציות עזר חדשות ---
+
+// 1. יצירת תאריך בפורמט DD-MM-YY לשמות קבצים
+function getFormattedDateForFile() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = String(d.getFullYear()).slice(-2);
+  return `${dd}-${mm}-${yy}`;
+}
+
+// 2. שחזור מגיבוי על ידי הדבקת טקסט
+function restoreFromText() {
+  const jsonText = prompt("הדבק כאן את קוד הגיבוי (JSON) שהעתקת:");
+  if (!jsonText) return;
+
+  try {
+    const parsedData = JSON.parse(jsonText);
+    if (parsedData && parsedData.logs) {
+      // קריאה לפונקציית המיזוג החכמה שכבר קיימת בקוד
+      restoreFullBackupJsonFromText(jsonText);
+      if (typeof updateProfilePic === "function") updateProfilePic();
+    } else {
+      alert("הטקסט שהודבק לא נראה כמו קובץ גיבוי תקין.");
+    }
+  } catch (e) {
+    alert(
+      "שגיאה בפענוח הטקסט. וודא שהעתקת את הגיבוי במלואו (ללא תוספות מסביב).",
+    );
+    console.error(e);
+  }
+}
+
+// 3. עדכון תמונת הפרופיל בראש הדף
+function updateProfilePic() {
+  const container = document.getElementById("userProfileIconContainer");
+  if (!container) return;
+
+  if (userSettings.profilePicUrl && userSettings.profilePicUrl.trim() !== "") {
+    // אם יש לינק, נשים תמונה. ה-onerror מוודא שאם הלינק שבור, זה חוזר לאייקון.
+    container.innerHTML = `<img src="${userSettings.profilePicUrl}" class="h-full w-full object-cover" alt="Profile" onerror="this.parentElement.innerHTML='<i class=\\'fa-solid fa-user text-xl\\'></i>';"/>`;
+  } else {
+    // אם אין, נחזיר את האייקון הרגיל
+    container.innerHTML = `<i class="fa-solid fa-user text-xl"></i>`;
+  }
 }
